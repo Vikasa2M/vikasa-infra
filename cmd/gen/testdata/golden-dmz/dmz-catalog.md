@@ -8,5 +8,5 @@
 
 | Consumer | Public subject (subscribe) |
 |---|---|
-| `research-aggregate` | `vikasa.exdot.share.research.>` |
+| `research-aggregate` | `vikasa.exdot.share.research-aggregate.>` |
 | `peer-neighbor-corridor` | `vikasa.peer.exdot.hwy9.>` |

@@ -122,6 +122,16 @@ func TestValidateRejections(t *testing.T) {
 		{"share omitted as defaults and passes",
 			topoSpec(`"dot":"exdot",` + okCluster + `,` + okCentral + `,"dmz":{"cluster":"core","shares":[{"consumer":"research","from":"vikasa.exdot.d1.>"}]}`),
 			""},
+		// Finding 1: a `from` that satisfies the district-prefix match but
+		// carries an accounts.conf quote-breakout payload must be rejected.
+		{"share from with injection payload",
+			topoSpec(`"dot":"exdot",` + okCluster + `,` + okCentral + `,"dmz":{"cluster":"core","shares":[{"consumer":"research","from":"vikasa.exdot.d1.\" } ] } ATTACKER { jetstream: enabled","as":"vikasa.exdot.share.research.>"}]}`),
+			"from"},
+		// Finding 1: a non-token consumer would flow unescaped into the DMZ
+		// user label and the defaulted `as` subject.
+		{"share consumer not a token",
+			topoSpec(`"dot":"exdot",` + okCluster + `,` + okCentral + `,"dmz":{"cluster":"core","shares":[{"consumer":"bad consumer\"","from":"vikasa.exdot.d1.>","as":"vikasa.exdot.share.x.>"}]}`),
+			"consumer"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -162,6 +172,9 @@ func TestValidateDeclaredSubjectPrefix(t *testing.T) {
 		{"missing .> suffix", "vikasa.exdot.d7", true},
 		{"bare wildcard suffix without dot", "vikasa.exdot.d7>", true},
 		{"unanchored", "other.d7.>", true},
+		// Finding 1: anchored + .>-suffixed but with an injection payload in
+		// the middle must still be rejected (quote-breakout into accounts.conf).
+		{"anchored but injection in middle", "vikasa.exdot.d7.\" } bad.>", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -285,6 +298,13 @@ func TestValidateDMZShareAs(t *testing.T) {
 		{"share space", "vikasa.exdot.share.research.>", false},
 		{"share space single subject", "vikasa.exdot.share.research.summary", false},
 		{"peer space", "vikasa.peer.exdot.hwy9.>", false},
+		// Finding 2: an `as` under the share space but NOT scoped to this
+		// consumer ("research") leaks every other consumer's shares.
+		{"share space root not consumer-scoped", "vikasa.exdot.share.>", true},
+		{"other consumer's share space", "vikasa.exdot.share.other.>", true},
+		// Finding 1: injection characters in `as` must be rejected even when
+		// the mandatory share-space prefix is present.
+		{"share space with quote breakout", `vikasa.exdot.share.research." } ] } ATTACKER { x`, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

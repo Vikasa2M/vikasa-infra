@@ -75,8 +75,8 @@ func TestIssue_DMZConsumerCreds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(uc.Sub.Allow) != 1 || uc.Sub.Allow[0] != "vikasa.exdot.share.research.>" {
-		t.Errorf("consumer subscribe scope = %v, want [vikasa.exdot.share.research.>]", uc.Sub.Allow)
+	if len(uc.Sub.Allow) != 1 || uc.Sub.Allow[0] != "vikasa.exdot.share.research-aggregate.>" {
+		t.Errorf("consumer subscribe scope = %v, want [vikasa.exdot.share.research-aggregate.>]", uc.Sub.Allow)
 	}
 	if len(uc.Pub.Deny) != 1 || uc.Pub.Deny[0] != ">" {
 		t.Errorf("consumer must deny all publish, got Pub.Deny=%v", uc.Pub.Deny)
