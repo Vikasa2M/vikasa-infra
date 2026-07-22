@@ -1,0 +1,25 @@
+{
+  "vikasa-infra-topology:topology": {
+    "dot": "exdot",
+    "cluster": [
+      { "id": "d1a",  "js-domain": "d1a",  "leaf-endpoint": "leaf-d1a.nats.vikasa.exdot:7422",  "substrate": { "type": "kubernetes", "context": "exdot-d1a",  "namespace": "vikasa-d1a" } },
+      { "id": "core", "js-domain": "core", "leaf-endpoint": "leaf-core.nats.vikasa.exdot:7422", "substrate": { "type": "kubernetes", "context": "exdot-core", "namespace": "vikasa-core" } },
+      { "id": "dmz",  "js-domain": "dmz",  "leaf-endpoint": "leaf-dmz.nats.vikasa.exdot:7422",  "substrate": { "type": "bare-metal", "hosts": ["exdot-dmz-1", "exdot-dmz-2", "exdot-dmz-3"] } }
+    ],
+    "district": [
+      { "id": "d1", "partition": [
+          { "id": "d1/0", "cluster": "d1a" },
+          { "id": "d1/8", "cluster": "d1a" }
+      ] }
+    ],
+    "central": { "cluster": "core", "replicas": 5 },
+    "dmz": {
+      "cluster": "dmz",
+      "replicas": 3,
+      "shares": [
+        { "consumer": "research-aggregate", "from": "vikasa.exdot.d1.>",     "as": "vikasa.exdot.share.research.>" },
+        { "consumer": "peer-neighbor-corridor", "from": "vikasa.exdot.d1.hwy9.>", "as": "vikasa.peer.exdot.hwy9.>" }
+      ]
+    }
+  }
+}

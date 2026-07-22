@@ -1,0 +1,30 @@
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Secrets — never commit plaintext material (SOPS-encrypted files are fine)
+*.key
+*.pem
+*.crt
+*.nkey
+*.jwt
+*.creds
+!*.enc.yaml
+
+# Local-only planning scaffold (never committed)
+docs/superpowers/
+/rendered/
+
+# Build artifacts
+/gen
+
+# Minted credentials (secrets — never commit)
+/creds/
+
+# Defense in depth: never commit NATS seeds or JWTs written anywhere in the tree
+*.nkey
+*.jwt

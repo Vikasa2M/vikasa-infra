@@ -1,0 +1,15 @@
+{
+  "dot": "exdot",
+  "shares": [
+    {
+      "consumer": "research-aggregate",
+      "public_subject": "vikasa.exdot.share.research.\u003e",
+      "internal_source": "vikasa.exdot.d1.\u003e"
+    },
+    {
+      "consumer": "peer-neighbor-corridor",
+      "public_subject": "vikasa.peer.exdot.hwy9.\u003e",
+      "internal_source": "vikasa.exdot.d1.hwy9.\u003e"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "dot": "exdot",
+  "cabinets": [
+    { "id": "exdot-d7a-cab-001", "partition": "d7/0", "filter": "vikasa.exdot.d7.001.>" },
+    { "id": "exdot-d7a-cab-002", "partition": "d7/0" },
+    { "id": "exdot-d7b-cab-050", "partition": "d7/8" }
+  ]
+}

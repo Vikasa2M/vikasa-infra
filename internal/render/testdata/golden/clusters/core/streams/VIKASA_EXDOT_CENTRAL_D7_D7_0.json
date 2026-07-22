@@ -1,0 +1,16 @@
+{
+  "name": "VIKASA_EXDOT_CENTRAL_D7_D7_0",
+  "retention": "limits",
+  "storage": "file",
+  "num_replicas": 5,
+  "max_age": 900000000000,
+  "max_bytes": 21474836480,
+  "sources": [
+    {
+      "name": "VIKASA_EXDOT_D7_D7_0",
+      "external": {
+        "api": "$JS.d7a.API"
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+# Rebalance Runbook: {{ .DOT }}
+
+> **Generated** by vikasa-infra/cmd/gen from the diff of the previous and new specs. Apply top-to-bottom; each phase is online and idempotent.
+{{- if not .HasChanges }}
+
+No changes between the previous and new specs. Nothing to rebalance.
+{{- else }}
+{{- if .Moved }}
+
+## Moved partitions (rehost)
+
+Identity is unchanged; cabinets re-resolve via DNS (durable buffer → no gap; duplicate deliveries during the switch are absorbed by idempotent sinks keyed on `ce-id`). Cabinet config is never touched.
+
+### Phase 1 — Stand up target streams
+{{ range .Moved }}
+- Apply `clusters/{{ .NewCluster }}/streams.yaml` to create `{{ .Name }}` on `{{ .NewCluster }}` (empty).
+{{- end }}
+
+### Phase 2 — Dual-source at central
+{{ range .Moved }}
+- Central now sources `{{ .Name }}` from `$JS.{{ .NewDomain }}.API` (was `$JS.{{ .OldDomain }}.API`). Dual-source briefly; the overlap yields duplicate deliveries, deduplicated downstream by `ce-id`-keyed idempotent sinks (stream-level dedup is off on sourcing streams — finding C4).
+{{- end }}
+
+### Phase 3 — Repoint leaf-DNS + cycle connections
+Repoint the affected records (see **DNS changes** below), then cycle the affected cabinets' connections at the old cluster so they reconnect and re-resolve.
+
+### Phase 4 — Cabinets re-source (no action)
+Cabinets land on the new cluster and re-source telemetry from the current sequence — durable buffer means no gap; any duplicate delivery is reconciled by `ce-id`-keyed sinks.
+
+### Phase 5 — Tear down old streams
+{{ range .Moved }}
+- Remove central's source of `{{ .Name }}` from `$JS.{{ .OldDomain }}.API`, then delete `{{ .Name }}` on `{{ .OldCluster }}`.
+{{- end }}
+{{- end }}
+{{- if .Added }}
+
+## New partitions
+
+Provision and add to central's sources:
+{{ range .Added }}
+- `{{ .Name }}` on `{{ .Cluster }}` — apply `clusters/{{ .Cluster }}/streams.yaml`.
+{{- end }}
+{{- end }}
+{{- if .Removed }}
+
+## Decommissioned partitions
+
+Remove central's source and delete the stream:
+{{ range .Removed }}
+- `{{ .Name }}` on `{{ .Cluster }}`
+{{- end }}
+{{- end }}
+{{- if .Modified }}
+
+## In-place updates
+
+Apply the updated manifests; NACK / `nats stream update` reconciles in place (no rebalance dance):
+{{ range .Modified }}
+- `{{ .Name }}` on `{{ .Cluster }}` — apply `clusters/{{ .Cluster }}/streams.yaml`.
+{{- end }}
+{{- end }}
+{{- if or .DNSChanged .DNSAdded .DNSRemoved }}
+
+## DNS changes
+
+Update these records in your `vikasa.{{ .DOT }}` zone (manual unless external-dns automates them):
+{{ range .DNSChanged }}
+- repoint `{{ .Name }}`: `{{ .OldTarget }}` → `{{ .NewTarget }}`
+{{- end }}
+{{- range .DNSAdded }}
+- create `{{ .Name }}` → `{{ .NewTarget }}`
+{{- end }}
+{{- range .DNSRemoved }}
+- remove `{{ .Name }}` (was `{{ .OldTarget }}`)
+{{- end }}
+{{- end }}
+{{- end }}

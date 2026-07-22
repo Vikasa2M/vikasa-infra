@@ -1,0 +1,20 @@
+{
+  "vikasa-infra-topology:topology": {
+    "dot": "exdot",
+    "cluster": [
+      { "id": "d7a", "js-domain": "d7a", "leaf-endpoint": "leaf-d7a.nats.vikasa.exdot:7422",
+        "substrate": { "type": "bare-metal", "hosts": ["exdot-d7a-1", "exdot-d7a-2", "exdot-d7a-3"] } },
+      { "id": "d7b", "js-domain": "d7b", "leaf-endpoint": "leaf-d7b.nats.vikasa.exdot:7422",
+        "substrate": { "type": "bare-metal", "hosts": ["exdot-d7b-1", "exdot-d7b-2", "exdot-d7b-3"] } },
+      { "id": "core", "js-domain": "core", "leaf-endpoint": "leaf-core.nats.vikasa.exdot:7422",
+        "substrate": { "type": "kubernetes", "context": "exdot-core", "namespace": "vikasa-core" } }
+    ],
+    "district": [
+      { "id": "d7", "partition": [
+          { "id": "d7/0", "cluster": "d7a" },
+          { "id": "d7/8", "cluster": "d7b" }
+      ] }
+    ],
+    "central": { "cluster": "core", "replicas": 5 }
+  }
+}

@@ -1,0 +1,155 @@
+# Deployment Guide: {{ .DOT }}
+
+> **Generated** by vikasa-infra/cmd/gen — review before applying.
+
+## Topology Summary
+
+**DOT:** `{{ .DOT }}`
+**Deployment mode:** {{ .DeploymentMode }}
+
+### Clusters
+
+| ID | Substrate | JS Domain | Leaf Endpoint |
+|----|-----------|-----------|---------------|
+{{ range .Clusters -}}
+| `{{ .ID }}` | {{ .SubstrateLabel }} | `{{ .JsDomain }}` | `{{ .LeafEndpoint }}` |
+{{ end }}
+## Provisioning Order
+
+1. Ensure the **central** cluster (`{{ .CentralCluster }}`) is reachable and its operator/accounts exist (prerequisite).
+2. Provision the **central** cluster's slice in `{{ .CentralPath }}` first (k8s: apply the Stream CRs, sync-wave 0; bare-metal: see install notes below).
+3. Provision each **regional** cluster's slice in `{{ .K8sSliceDir }}` (k8s: sync-wave 1{{ if .Helm }}; bare-metal slices stay under `clusters/<id>/`{{ end }}).
+4. Create DNS records (below).
+5. Cabinets onboard incrementally (separate runbook).
+{{ if .BareMetalClusters }}
+### Bare-Metal Install Notes
+
+Sub-project B (PKI / accounts) supplies a `security.conf` next to each `nats.conf`
+(TLS, accounts, operator/resolver). It is referenced via `include "security.conf"`
+and is **not** generated here.
+{{ range .BareMetalClusters -}}
+- **`{{ .ID }}`** — on hosts `{{ .Hosts }}`: install `nats-server`, drop that host's
+  `clusters/{{ .ID }}/nats-<host>.conf` as `/etc/vikasa/nats.conf`, install
+  `clusters/{{ .ID }}/nats-server.service`, then `systemctl enable --now nats-server`.
+  Create the streams with `nats stream add --config clusters/{{ .ID }}/streams/<NAME>.json`.
+{{ end -}}
+{{ end -}}
+{{ if .K8sClusters }}
+### Kubernetes Clusters
+
+Applied by Argo / `kubectl apply`.
+{{ end }}
+## Reconciliation Strategy
+
+Each renderer emits per-cluster file slices, so any reconciliation toolchain works. Default: per-cluster Argo CD (pull) for multi-cluster deployments; hub Argo when all clusters are co-administered from one control plane; `kubectl apply` or bare-metal systemd otherwise.
+
+## DNS Records
+
+Create these CNAME/A records in your `vikasa.{{ .DOT }}` zone:
+
+| Name | Target |
+|------|--------|
+{{ range .DNS -}}
+| `{{ .Name }}` | `{{ .Target }}` |
+{{ end }}
+> **Tip:** On Kubernetes with [external-dns](https://github.com/kubernetes-sigs/external-dns), these records can be created automatically from Service/Ingress annotations (optional).
+
+## Verification
+
+For each cluster, verify that the expected streams are present:
+{{ range .Clusters }}
+**`{{ .ID }}`** (`{{ .LeafEndpoint }}`):
+
+```
+nats --server {{ .LeafEndpoint }} stream ls
+```
+{{ if .Streams -}}
+Expected streams:
+{{ range .Streams -}}
+- `{{ . }}`
+{{ end -}}
+{{ end -}}
+{{ end }}
+> The central cluster (`{{ .CentralCluster }}`) should also show each partition stream as a source of its central shard (`VIKASA_<DOT>_CENTRAL_<district>_<partition>`).
+{{- if .HasCabinets }}
+
+## Cabinet Onboarding
+
+Each regional partition stream sources its assigned cabinets' `VIKASA_BUFFER`:
+{{ range .CabinetCounts }}
+- `{{ .Stream }}` — {{ .Count }} cabinet(s)
+{{- end }}
+
+Onboard incrementally: add cabinets to the inventory, rerun `cmd/gen`, and apply (NACK reconciles, or `nats stream update` performs the live source-add). Per-cabinet credentials/JWTs are provisioned by sub-project B (control plane / PKI), not generated here.
+{{- end }}
+{{- if .HasDMZ }}
+
+## External Sharing (DMZ)
+
+The **DMZ** cluster (`{{ .DMZStream.Cluster }}`) hosts the `{{ .DMZStream.Name }}` stream (wave 2 — provisioned last). It re-publishes a filtered subset of central traffic under public subjects for external consumers.
+
+- Provision the DMZ cluster's slice after central and regional (wave 2); apply the Stream CRs in `{{ .DMZPath }}`.
+- The public subjects and per-consumer share names are listed in [`dmz-catalog.md`](dmz-catalog.md).
+- Issue per-consumer subscribe-only JWTs scoped to each share's public subject (sub-project B / PKI). Consumers receive a credential that cannot publish or access internal subjects.
+{{- end }}
+
+## Deployment (GitOps)
+
+{{ if .Helm -}}
+Each Kubernetes cluster's slice is a Helm chart under `charts/<id>/` (`Chart.yaml`, `values.yaml`, `templates/`); no `kustomization.yaml` is emitted in helm mode.
+
+- **Kubernetes:** deploy with `helm install vikasa-<id> charts/<id>` (or render first: `helm template charts/<id> | kubectl apply -f -`; with Argo CD, point the Application at the chart path — the generated `argocd/<id>.yaml` already targets `charts/<id>` and is emitted only when `cmd/gen -argo-repo-url` is set). `values.yaml` defaults reproduce the generated knob values (`namespace`, `tlsIssuer`, `secretStore`, `prometheusRelease`); override per environment with `-f`.
+- **Bare-metal:** no Argo — install the rendered `nats.conf` + systemd unit and apply the streams per the bare-metal steps above.
+{{ else -}}
+Each `clusters/<id>` is a Kustomize overlay (`kustomization.yaml`).
+
+- **Kubernetes:** deploy with Argo CD — apply the generated `argocd/<id>.yaml` (per-cluster pull: each cluster's Argo CD syncs its own `clusters/<id>` from the configured repo) — or directly with `kubectl apply -k clusters/<id>`. `argocd/<id>.yaml` is generated only when `cmd/gen -argo-repo-url` is set.
+- **Bare-metal:** no Argo — install the rendered `nats.conf` + systemd unit and apply the streams per the bare-metal steps above.
+{{ end }}
+## Observability
+
+NATS exposes metrics via the prometheus-nats-exporter (enable it in the NATS Helm release; it serves a `metrics` port on the NATS Service). With the Prometheus Operator installed:
+
+- The generated `{{ .K8sResourceDir }}servicemonitor.yaml` scrapes that `metrics` port; `{{ .K8sResourceDir }}prometheusrule.yaml` ships starter NATS/JetStream alerts (`NatsServerDown`, `NatsSlowConsumers`, and `NatsLeafDown` on regional clusters). Both carry `release: {{ .PrometheusRelease }}` for operator discovery — tune the alert exprs to your exporter version.
+- **Bare-metal:** NATS serves monitoring on `:8222`; scrape it via a separate exporter (not generated here).
+
+## TLS / mTLS
+
+All inter-tier links use mTLS. The CA and certificates are operator-provisioned (not generated here):
+
+- **Kubernetes:** create the `{{ .TLSIssuer }}` ClusterIssuer (your CA — self-signed, Vault, or an intermediate). cert-manager issues each cluster's server cert into secret `<cluster>-nats-server-tls` from the generated `{{ .K8sResourceDir }}certificate.yaml`; mount that secret into the NATS server pods and reference it in the server's TLS listeners.
+- **Bare-metal:** provision `/etc/vikasa/tls/{ca,leafnode-server-{cert,key},cluster-{cert,key},client-{cert,key}}.pem` on each host (e.g. via vault-agent). The generated `nats.conf` already references these paths.
+- **Cabinet client certs:** `cmd/issue -cabinets` mints `ca/cabinet-ca.crt` (the cabinet client CA) and, per cabinet, `cabinets/<district>/<id>.{crt,key,creds}`. Append `cabinet-ca.crt` to each server's trusted client-CA bundle (the `ca_file` the listeners reference) so cabinet client certs validate; deliver each cabinet its own `.crt`/`.key`/`.creds`. The client and leafnode listeners use `verify` (the cabinet's identity is its user JWT, not the cert).
+- **Inventory token (External Secrets):** provision the `{{ .SecretStore }}` ClusterSecretStore (your backend — Vault, AWS/GCP SM, …) and populate `vikasa/{{ .DOT }}/infrahub-token`. The generated `{{ .K8sResourceDir }}externalsecret.yaml` materializes the `infrahub-token` Secret (key `token`); the poller reads it (env/mount) instead of an inline token. Bare-metal/field cabinets pull the same backend value at imaging (sub-project E). No plaintext token is generated.
+
+## Operations — HA, Retention & Scaling
+
+Day-2 operation of the `{{ .DOT }}` topology. Placement is infra-side and mutable; identity (`vikasa.{{ .DOT }}.<district>.>`) is stable — rehosting/rebalancing is transparent to central and DMZ (they subscribe by district token, never by cluster).
+
+### High Availability
+
+- Each cluster runs a **3-node R3 quorum** (JetStream RAFT) — tolerates the loss of **1 node**; RAFT caps JetStream at **3–5 nodes**, so scale by adding clusters, not nodes.
+- A district spans **multiple independent clusters** for fault isolation and independent upgrades. Central sources each cluster's partition streams cross-domain (`$JS.<domain>.API`), so losing one cluster degrades **only its partitions**, not the district.
+- This deployment's clusters:
+{{ range .Clusters }}  - `{{ .ID }}` ({{ .SubstrateLabel }}) — 3-node R3 quorum
+{{ end }}- Central aggregation cluster: `{{ .CentralCluster }}`.
+
+### Retention
+
+- Every stream is **bounded**: file storage with a `max_age` **and** a `max_bytes` cap (finding C2). The exact values per stream are in each cluster's generated `streams.yaml`.
+- Regional streams keep **short retention (hours)** — the recent past, not the archive; **central runs shorter still (minutes)** as an aggregation/routing tier. History lives in **ClickHouse**. Perception volume is governed by the ingest envelope (see `docs/capacity-model.md`), not a fixed multiplier.
+- **Node-level backstop (operator-set):** the generator bounds each *stream*, not the NATS *server's* JetStream store. On k8s set `jetstream.max_file_store` in the NATS Helm values; on bare-metal it is in the generated `nats.conf` (`max_file_store`).
+- To change retention: edit the spec, rerun `cmd/gen`, and apply (NACK reconciles, or `nats stream update`).
+
+### Scaling
+
+Scale levers, **in order** (reserve identity splits for org changes only):
+
+1. **Vertical** — bigger NVMe nodes first (bounded by the 3–5-node RAFT cap).
+2. **Partition within the cluster** — K streams on the same 3 nodes.
+3. **Partition across an added cluster** — the district spans clusters.
+4. **Split the district identity** — *only* for organizational reorgs, never for capacity.
+
+**Shard, don't split:** assign partitions **explicitly** (by geography, in the spec/inventory), never by hashing — growth moves a *chosen* subset, never a hash-avalanche.
+
+**Expansion = rerun:** edit the spec → rerun `cmd/gen` → review the generated `REBALANCE.md` (emitted with `-previous`) for the ordered move/rehost steps → apply. Humans decide *when* (from the Observability alerts + monitoring); the generator computes the *how*. Exact partition count **K** and node sizing come from a load test (no baseline yet — the capacity advisor is a deferred follow-on).

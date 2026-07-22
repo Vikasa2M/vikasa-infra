@@ -1,0 +1,15 @@
+{
+  "dot": "exdot",
+  "cabinets": [
+    { "id": "exdot-d1a-cab-001", "partition": "d1/0", "filter": "vikasa.exdot.d1.001.>" },
+    { "id": "exdot-d1a-cab-002", "partition": "d1/0", "filter": "vikasa.exdot.d1.002.>" },
+    { "id": "exdot-d1a-cab-003", "partition": "d1/0", "filter": "vikasa.exdot.d1.003.>" },
+    { "id": "exdot-d1a-cab-004", "partition": "d1/0", "filter": "vikasa.exdot.d1.004.>" },
+    { "id": "exdot-d1a-cab-005", "partition": "d1/0", "filter": "vikasa.exdot.d1.005.>" },
+    { "id": "exdot-d1a-cab-006", "partition": "d1/8" },
+    { "id": "exdot-d1a-cab-007", "partition": "d1/8" },
+    { "id": "exdot-d1a-cab-008", "partition": "d1/8" },
+    { "id": "exdot-d1a-cab-009", "partition": "d1/8" },
+    { "id": "exdot-d1a-cab-010", "partition": "d1/8" }
+  ]
+}

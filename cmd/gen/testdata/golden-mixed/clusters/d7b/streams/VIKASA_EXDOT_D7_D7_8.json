@@ -1,0 +1,8 @@
+{
+  "name": "VIKASA_EXDOT_D7_D7_8",
+  "retention": "limits",
+  "storage": "file",
+  "num_replicas": 3,
+  "max_age": 21600000000000,
+  "max_bytes": 53687091200
+}

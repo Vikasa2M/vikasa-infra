@@ -1,0 +1,63 @@
+{
+  "name": "VIKASA_EXDOT_DMZ",
+  "retention": "limits",
+  "storage": "file",
+  "num_replicas": 3,
+  "max_age": 3600000000000,
+  "max_bytes": 10737418240,
+  "duplicates": 300000000000,
+  "republish": {
+    "src": "vikasa.\u003e",
+    "dest": "vikasa.\u003e"
+  },
+  "sources": [
+    {
+      "name": "VIKASA_EXDOT_CENTRAL_D1_D1_0",
+      "external": {
+        "api": "$JS.core.API"
+      },
+      "subject_transforms": [
+        {
+          "src": "vikasa.exdot.d1.\u003e",
+          "dest": "vikasa.exdot.share.research.\u003e"
+        }
+      ]
+    },
+    {
+      "name": "VIKASA_EXDOT_CENTRAL_D1_D1_8",
+      "external": {
+        "api": "$JS.core.API"
+      },
+      "subject_transforms": [
+        {
+          "src": "vikasa.exdot.d1.\u003e",
+          "dest": "vikasa.exdot.share.research.\u003e"
+        }
+      ]
+    },
+    {
+      "name": "VIKASA_EXDOT_CENTRAL_D1_D1_0",
+      "external": {
+        "api": "$JS.core.API"
+      },
+      "subject_transforms": [
+        {
+          "src": "vikasa.exdot.d1.hwy9.\u003e",
+          "dest": "vikasa.peer.exdot.hwy9.\u003e"
+        }
+      ]
+    },
+    {
+      "name": "VIKASA_EXDOT_CENTRAL_D1_D1_8",
+      "external": {
+        "api": "$JS.core.API"
+      },
+      "subject_transforms": [
+        {
+          "src": "vikasa.exdot.d1.hwy9.\u003e",
+          "dest": "vikasa.peer.exdot.hwy9.\u003e"
+        }
+      ]
+    }
+  ]
+}
