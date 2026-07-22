@@ -515,7 +515,8 @@ be an open door, or the ATMS's authority is bypassable):
 
 - **External Secrets Operator** over a secret backend for signing keys, CA
   material, ClickHouse/Infrahub creds.
-- **Kill the hardcoded Infrahub token** baked into ConfigMaps + the cabinet image.
+- **Retire any statically-provisioned Infrahub tokens** in favor of the
+  External Secrets path (the generated output already uses `externalsecret.yaml`).
 
 ---
 

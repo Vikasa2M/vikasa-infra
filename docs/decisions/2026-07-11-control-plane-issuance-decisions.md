@@ -2,7 +2,6 @@
 
 Status: **Accepted** — 2026-07-11
 Scope: `cmd/issue` / `internal/issuance` (the operator/JWT control plane)
-Linear: MON-53 (this decision), MON-50 & MON-52 (parked, reasoning below)
 
 This is the first decision record in `docs/decisions/`. Format: Context → Decision →
 Alternatives considered (with why-rejected) → Consequences. One file per decision
@@ -25,12 +24,12 @@ cluster; keep the rationale, not just the outcome.
   the render/config layer (`test/integration/dmz_flow_test.go`, `accounts.tmpl`),
   **not** at the operator-mode trust-chain layer that `issuance` owns.
 - Near-term roadmap includes operator mode **and** real external DMZ partners, so
-  this gap is blocking, not hypothetical. (Confirmed with the product owner
-  2026-07-11 — this is why MON-53 was promoted from scope-debt to active work.)
+  this gap is blocking, not hypothetical. (Confirmed 2026-07-11 — this is why
+  DMZ consumer issuance was promoted from scope-debt to active work.)
 
 ## Decision
 
-Add DMZ external-consumer credential issuance to `cmd/issue` (MON-53), scoped as:
+Add DMZ external-consumer credential issuance to `cmd/issue`, scoped as:
 
 1. **DMZ consumers only, mint-only.** SYSTEM and consumer-cred rotation/revocation
    are clean follow-ons, not in this cycle.
@@ -81,13 +80,12 @@ of the mint path*, not new crypto.
 
 ---
 
-## Related decisions (same session): scale-item triage
+## Related decisions: scale-item triage
 
-These were originally filed as deferred "10k-scale" work. Analysis during this
-session showed both were lower-value than their framing suggested; recording the
+These were originally filed as deferred "10k-scale" work. Analysis showed both were lower-value than their framing suggested; recording the
 reasoning so they are not reflexively rebuilt.
 
-### MON-50 — parallel per-cabinet minting — **PARKED (low value)**
+### Parallel per-cabinet minting — **PARKED (low value)**
 
 Minting 10k cabinets is a **one-time, offline, idempotent, incrementally-onboarded**
 operation: ~15–90s single-core, and steady-state runs mint only *new* cabinets
@@ -96,7 +94,7 @@ The only cold-10k case is disaster re-keying — a rare, offline, 2am event wher
 is a non-event. Parallelizing optimizes a batch job nobody waits on; not worth making
 the `pki.Signer` concurrency-safe now. Kept as a someday-nice-to-have.
 
-### MON-52 — revocation-log compaction — **REFRAMED / PARKED**
+### Revocation-log compaction — **REFRAMED / PARKED**
 
 The premise ("account-JWT `Revocations` grows unbounded at fleet scale") is mostly
 false given the design:

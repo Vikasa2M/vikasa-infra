@@ -6,7 +6,7 @@
 > executed is the pointer-scalar topology model refactor below — track it as a
 > GitHub issue.
 
-Source: five-agent deep-dive review (correctness ×2, security, architecture, tests).
+Source: deep-dive review (correctness ×2, security, architecture, tests).
 Goal: close all findings, ordered so the DMZ/credential trust boundary is fixed
 first, consolidation refactors land on top of green tests, and CI pins everything.
 

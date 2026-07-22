@@ -1,5 +1,9 @@
 # vikasa-infra remediation — Implementation Plan
 
+> **Status: COMPLETE — merged to `main` (2026-07).** Kept as a historical
+> record; the seed-wipe, creds-dir permission sweep (including `ca/`), and
+> leaf-DNS collision guard described below are all in the current code.
+
 **Goal:** Close three golden-invisible defects, finish the naming SSOT and the substrate seam, de-god `plan.Build`, and add an advisory fleet-scale fan-in guard — mostly behavior-preserving, gated by the golden-tree suite.
 
 **Architecture:** Four waves, each an independent review checkpoint. Two heavier scale changes (parallel minting, revocation compaction) are deferred to a companion design and are NOT in this plan.

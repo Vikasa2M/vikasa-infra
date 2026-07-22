@@ -79,7 +79,7 @@ func TestAttachCabinets_OrphanPartition(t *testing.T) {
 
 func TestAttachCabinets_DotMismatch(t *testing.T) {
 	p, root := sharedPlan(t)
-	inv := &fleet.Inventory{DOT: "scdot"}
+	inv := &fleet.Inventory{DOT: "otherdot"}
 	if err := plan.AttachCabinets(p, inv, root); err == nil {
 		t.Fatal("expected dot-mismatch error, got nil")
 	}

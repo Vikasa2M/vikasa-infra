@@ -24,15 +24,15 @@ func TestAggregateDMZConsumers(t *testing.T) {
 			// consumer "research" appears in two shares → one aggregated cred
 			{Label: "research", Subscribe: []string{"vikasa.exdot.share.corridor-b.>"}, PublishDeny: []string{">"}},
 			{Label: "research", Subscribe: []string{"vikasa.exdot.share.corridor-a.>"}, PublishDeny: []string{">"}},
-			{Label: "peer-cdot", Subscribe: []string{"vikasa.peer.exdot.>"}, PublishDeny: []string{">"}},
+			{Label: "peer-neighbor", Subscribe: []string{"vikasa.peer.exdot.>"}, PublishDeny: []string{">"}},
 		}},
 	}}
 	got := aggregateDMZConsumers(m)
 	if len(got) != 2 {
 		t.Fatalf("want 2 consumers, got %d: %+v", len(got), got)
 	}
-	// sorted by name: peer-cdot, research
-	if got[0].Name != "peer-cdot" || got[1].Name != "research" {
+	// sorted by name: peer-neighbor, research
+	if got[0].Name != "peer-neighbor" || got[1].Name != "research" {
 		t.Fatalf("consumers not sorted by name: %+v", got)
 	}
 	// research's two share subjects unioned + sorted
