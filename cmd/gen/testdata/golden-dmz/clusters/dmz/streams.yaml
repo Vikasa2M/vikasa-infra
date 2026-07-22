@@ -24,12 +24,12 @@ spec:
     externalApiPrefix: $JS.core.API
     subjectTransforms:
     - source: vikasa.exdot.d1.>
-      dest: vikasa.exdot.share.research.>
+      dest: vikasa.exdot.share.research-aggregate.>
   - name: VIKASA_EXDOT_CENTRAL_D1_D1_8
     externalApiPrefix: $JS.core.API
     subjectTransforms:
     - source: vikasa.exdot.d1.>
-      dest: vikasa.exdot.share.research.>
+      dest: vikasa.exdot.share.research-aggregate.>
   - name: VIKASA_EXDOT_CENTRAL_D1_D1_0
     externalApiPrefix: $JS.core.API
     subjectTransforms:

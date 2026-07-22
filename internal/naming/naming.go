@@ -20,6 +20,42 @@ func UnderPrefix(subject, prefix string) bool {
 	return subject == prefix
 }
 
+// ValidSubjectString reports whether s is a well-formed NATS subject safe to
+// emit into generated config: one or more '.'-separated tokens, each a non-empty
+// run of [A-Za-z0-9_-], or a single wildcard token ('*', or '>' as the final
+// token). It deliberately rejects the quoting, brace, whitespace and control
+// characters that would otherwise let a spec-supplied subject break out of its
+// quoted position in accounts.conf (config injection). Callers in
+// topology.Validate gate subject-prefix / from / as through this before those
+// strings can reach the plan and render layers.
+func ValidSubjectString(s string) bool {
+	if s == "" {
+		return false
+	}
+	tokens := strings.Split(s, ".")
+	for i, tok := range tokens {
+		switch tok {
+		case "":
+			return false // empty token: leading/trailing/double dot
+		case "*":
+			continue
+		case ">":
+			if i != len(tokens)-1 {
+				return false // '>' is only valid as the final token
+			}
+			continue
+		}
+		for _, r := range tok {
+			ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' ||
+				r >= '0' && r <= '9' || r == '_' || r == '-'
+			if !ok {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // Sanitize uppercases s and replaces every '/' and '-' with '_' — the shared
 // convention for deriving NATS stream/account/operator names from spec ids.
 // It is deliberately NOT injective ('/' and '-' collide); plan.Build rejects

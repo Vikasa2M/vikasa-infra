@@ -3,7 +3,7 @@
   "shares": [
     {
       "consumer": "research-aggregate",
-      "public_subject": "vikasa.exdot.share.research.\u003e",
+      "public_subject": "vikasa.exdot.share.research-aggregate.\u003e",
       "internal_source": "vikasa.exdot.d1.\u003e"
     },
     {

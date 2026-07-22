@@ -342,6 +342,9 @@ func (r *Root) Validate() error {
 			}
 		}
 		if d.SubjectPrefix != nil {
+			if !naming.ValidSubjectString(*d.SubjectPrefix) {
+				return fmt.Errorf("district %q: subject-prefix %q is not a well-formed subject", id, *d.SubjectPrefix)
+			}
 			anchor := naming.Anchor(*t.Dot)
 			if len(*d.SubjectPrefix) < len(anchor) || (*d.SubjectPrefix)[:len(anchor)] != anchor {
 				return fmt.Errorf("district %q: subject-prefix %q must be anchored at %q", id, *d.SubjectPrefix, anchor)
@@ -381,15 +384,41 @@ func (r *Root) Validate() error {
 			if s.Consumer == nil || *s.Consumer == "" {
 				return fmt.Errorf("dmz.shares[%d]: consumer is required", i)
 			}
+			// The consumer id becomes a NATS user label and, via
+			// DefaultShareAs, part of a subject; keep it a plain token so it
+			// cannot inject into the rendered accounts.conf.
+			if !tokenRE.MatchString(*s.Consumer) {
+				return fmt.Errorf("dmz share %q: consumer is not a token (lowercase alphanumerics and '-')", *s.Consumer)
+			}
 			if s.From == nil || *s.From == "" {
 				return fmt.Errorf("dmz share %q: from is required", *s.Consumer)
+			}
+			if !naming.ValidSubjectString(*s.From) {
+				return fmt.Errorf("dmz share %q: from %q is not a well-formed subject", *s.Consumer, *s.From)
 			}
 			if s.As == nil || *s.As == "" {
 				return fmt.Errorf("dmz share %q: as is required", *s.Consumer)
 			}
+			if !naming.ValidSubjectString(*s.As) {
+				return fmt.Errorf("dmz share %q: as %q is not a well-formed subject", *s.Consumer, *s.As)
+			}
 			shareSpace := naming.ShareSpace(*t.Dot)
 			peerSpace := naming.PeerSpace(*t.Dot)
-			if !strings.HasPrefix(*s.As, shareSpace) && !strings.HasPrefix(*s.As, peerSpace) {
+			// A share-space `as` must be scoped to THIS consumer's subtree —
+			// vikasa.<dot>.share.<consumer>. — or one consumer's creds would
+			// grant read access to every other consumer's shares (they all live
+			// in the single DMZ account). Peer-space `as` is a cross-DOT
+			// republish namespace keyed by corridor, not consumer, so it keeps
+			// the space-level check.
+			switch {
+			case strings.HasPrefix(*s.As, shareSpace):
+				scoped := shareSpace + *s.Consumer + "."
+				if !strings.HasPrefix(*s.As, scoped) {
+					return fmt.Errorf("dmz share %q: as %q must be scoped to this consumer under %q (deny-by-default)", *s.Consumer, *s.As, scoped+">")
+				}
+			case strings.HasPrefix(*s.As, peerSpace):
+				// allowed: peer republish space
+			default:
 				return fmt.Errorf("dmz share %q: as %q must live under %q or %q (deny-by-default)", *s.Consumer, *s.As, shareSpace+">", peerSpace+">")
 			}
 		}

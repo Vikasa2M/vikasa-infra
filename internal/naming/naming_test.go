@@ -35,6 +35,41 @@ func TestUnderPrefix(t *testing.T) {
 	}
 }
 
+func TestValidSubjectString(t *testing.T) {
+	cases := []struct {
+		name    string
+		subject string
+		want    bool
+	}{
+		{"district space", "vikasa.exdot.d7.>", true},
+		{"share space", "vikasa.exdot.share.research.>", true},
+		{"single subject", "vikasa.exdot.share.research.summary", true},
+		{"token wildcard", "vikasa.exdot.d7.*.flow", true},
+		{"underscores allowed", "vikasa.ex_dot.d_7.>", true},
+		{"hyphens allowed", "vikasa.exdot.peer-corridor.>", true},
+		{"empty", "", false},
+		{"leading dot", ".vikasa.exdot.>", false},
+		{"trailing dot", "vikasa.exdot.", false},
+		{"double dot empty token", "vikasa..exdot.>", false},
+		{"gt not final token", "vikasa.>.exdot", false},
+		// The injection characters: any of these breaking out of the quoted
+		// subject position in accounts.conf must be rejected at validation.
+		{"double quote", `vikasa.exdot.d1."x`, false},
+		{"brace", "vikasa.exdot.d1.{x}", false},
+		{"space", "vikasa.exdot.d1 x.>", false},
+		{"newline", "vikasa.exdot.d1.\n.>", false},
+		{"tab", "vikasa.exdot.d1.\t.>", false},
+		{"accounts.conf breakout payload", `vikasa.exdot.d1." } ] } ATTACKER { jetstream: enabled`, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := naming.ValidSubjectString(tc.subject); got != tc.want {
+				t.Fatalf("ValidSubjectString(%q) = %v, want %v", tc.subject, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestSubjectSpace(t *testing.T) {
 	if got := naming.SubjectSpace("exdot", "d7", nil); got != "vikasa.exdot.d7.>" {
 		t.Fatalf("default space: got %q", got)

@@ -17,7 +17,7 @@
       "cluster": "dmz",
       "replicas": 3,
       "shares": [
-        { "consumer": "research-aggregate", "from": "vikasa.exdot.d1.>",     "as": "vikasa.exdot.share.research.>" },
+        { "consumer": "research-aggregate", "from": "vikasa.exdot.d1.>",     "as": "vikasa.exdot.share.research-aggregate.>" },
         { "consumer": "peer-neighbor-corridor", "from": "vikasa.exdot.d1.hwy9.>", "as": "vikasa.peer.exdot.hwy9.>" }
       ]
     }

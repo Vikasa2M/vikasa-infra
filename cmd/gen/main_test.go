@@ -373,7 +373,7 @@ func TestGenGoldenDMZ(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read catalog: %v", err)
 	}
-	for _, want := range []string{"research-aggregate", "peer-neighbor-corridor", "vikasa.exdot.share.research.>", "vikasa.peer.exdot.hwy9.>"} {
+	for _, want := range []string{"research-aggregate", "peer-neighbor-corridor", "vikasa.exdot.share.research-aggregate.>", "vikasa.peer.exdot.hwy9.>"} {
 		if !strings.Contains(string(cat), want) {
 			t.Errorf("catalog missing %q", want)
 		}
@@ -534,7 +534,7 @@ func TestGenGoldenDMZBaremetal(t *testing.T) {
 	if len(cfg.Sources) != 4 {
 		t.Fatalf("want 4 DMZ sources (2 shares × 2 d1 central shards), got %d:\n%s", len(cfg.Sources), raw)
 	}
-	wantDest := map[string]bool{"vikasa.exdot.share.research.>": false, "vikasa.peer.exdot.hwy9.>": false}
+	wantDest := map[string]bool{"vikasa.exdot.share.research-aggregate.>": false, "vikasa.peer.exdot.hwy9.>": false}
 	for i, src := range cfg.Sources {
 		if len(src.SubjectTransforms) != 1 || src.FilterSubject != "" {
 			t.Errorf("source %d: every DMZ source must carry exactly one transform and no filter_subject: %+v", i, src)
